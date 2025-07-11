@@ -68,6 +68,8 @@ resource "helm_release" "argo_cd" {
   name            = "argo"
   repository      = "https://argoproj.github.io/argo-helm"
   chart           = "argo-cd"
+  namespace       = "argocd"
+  create_namespace = true
   force_update    = true
   cleanup_on_fail = true
   wait            = var.plugins.dont_wait_for_helm_install ? false : true
