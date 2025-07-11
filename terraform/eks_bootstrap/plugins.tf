@@ -67,7 +67,7 @@ resource "helm_release" "argo_cd" {
   count           = var.plugins == null ? 0 : var.plugins.argo_cd != null ? 1 : 0
   name            = "argo"
   repository      = "https://argoproj.github.io/argo-helm"
-  chart           = "argocd-apps"
+  chart           = "argo-cd"
   force_update    = true
   cleanup_on_fail = true
   wait            = var.plugins.dont_wait_for_helm_install ? false : true
