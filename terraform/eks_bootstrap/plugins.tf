@@ -155,7 +155,8 @@ resource "helm_release" "aws_alb_controller" {
   depends_on = [
     time_sleep.wait_for_node,
     helm_release.metrics_server,
-  helm_release.cluster_autoscaler]
+  helm_release.cluster_autoscaler,
+  helm_release.nginx]
 }
 
 # Nginx Controller
@@ -219,7 +220,7 @@ resource "helm_release" "nginx" {
   )
   depends_on = [
     time_sleep.wait_for_node,
-    helm_release.aws_alb_controller,
+   # helm_release.aws_alb_controller,
   helm_release.metrics_server]
 }
 
