@@ -97,6 +97,34 @@ resource "aws_iam_policy" "AmazonEKSCNIIPv6Policy" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "ecr_pull" {
+  role       = aws_iam_role.node.name
+  policy_arn = aws_iam_policy.ecr_pull.arn
+}
+resource "aws_iam_policy" "ecr_pull" {
+  name        = "worker-node-ecr-pull"
+  path        = "/"
+  description = "ECR pull policy to attach to worker-node"
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:DescribeImages",
+          "ecr:GetAuthorizationToken",
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
 #######################################################
 # ServiceAccount IAM Roles
 
