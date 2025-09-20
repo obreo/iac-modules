@@ -53,7 +53,7 @@ variable "plugins" {
       scheme_type       = optional(string, "internet-facing") # OR "internal"
       alb_config = optional(object({
         alb_ingress_traffic_mode = optional(string, "ip")
-        alb_family_type         = optional(string, "IPv6")
+        alb_family_type         = optional(string, "ipv4")
         enable_cross_zone = optional(bool, false)
       }))
       values            = optional(list(string), [])
