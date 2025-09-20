@@ -172,7 +172,7 @@ resource "helm_release" "nginx" {
   force_update     = true
   cleanup_on_fail  = true
   timeout          = 1200
-  wait             = var.plugins.dont_wait_for_helm_install ? false : true
+  wait             = true #var.plugins.dont_wait_for_helm_install ? false : true
   values           = lookup(each.value, "values", [])
   # Ingress Class Configuration
   set = concat(
