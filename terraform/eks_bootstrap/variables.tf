@@ -26,9 +26,11 @@ variable "integrations" {
         }))
       }))
 
-      ecr_registry = optional(object({
-        name = optional(string, "")
-      }))
+      ecr_registries = optional(map(
+        object({
+          name = optional(string, "")
+        })
+      ))
   })
 
   default = null
