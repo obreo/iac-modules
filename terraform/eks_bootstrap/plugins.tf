@@ -156,7 +156,9 @@ resource "helm_release" "aws_alb_controller" {
     time_sleep.wait_for_node,
     helm_release.metrics_server,
   helm_release.cluster_autoscaler,
-  helm_release.nginx]
+  helm_release.nginx,
+  helm_release.argo_cd,
+  helm_release.prometheus]
 }
 
 # Nginx Controller
