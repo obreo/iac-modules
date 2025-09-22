@@ -107,3 +107,53 @@ resource "aws_iam_role_policy_attachment" "aws_mountpoint_s3_csi_driver" {
   role       = aws_iam_role.aws_mountpoint_s3_csi_driver[count.index].name
   policy_arn = aws_iam_policy.aws_mountpoint_s3_csi_driver[count.index].arn
 }
+
+
+
+
+## 4. External Secrets Store
+### Role
+resource "aws_iam_role" "external_secrets" {
+  count = var.plugins.external_secrets == null ? 0 : 1
+  name  = "${lower(replace(data.aws_eks_cluster.eks.name, "_", "-"))}-external-secrets"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = ["sts:AssumeRole", "sts:TagSession"]
+        Effect = "Allow"
+        Principal = {
+          Service = ["pods.eks.amazonaws.com"]
+        }
+      },
+    ]
+  })
+}
+### Policy
+resource "aws_iam_policy" "external_secrets" {
+  count = var.plugins.external_secrets == null ? 0 : 1
+  name  = "${lower(replace(data.aws_eks_cluster.eks.name, "_", "-"))}-external-secrets"
+  policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Sid" : "ExternalSecretsAccess",
+          "Effect" : "Allow",
+          "Action" : [
+            "ssm:GetParameter*"
+          ],
+          "Resource" : [
+            "${var.plugins.external_secrets.ssm_path_prefix != "/" ? "arn:aws:ssm:${var.metadata.region}:${data.aws_caller_identity.current.account_id}:parameter${var.plugins.external_secrets.ssm_path_prefix}" : "*"}"
+          ]
+        }
+      ]
+    }
+  )
+}
+### Role Policy Attachment
+resource "aws_iam_role_policy_attachment" "external_secrets" {
+  count = var.plugins.external_secrets == null ? 0 : 1
+  role       = aws_iam_role.external_secrets[count.index].name
+  policy_arn = aws_iam_policy.external_secrets[count.index].arn
+}

@@ -73,6 +73,8 @@ variable "plugins" {
     }))
 
     external_secrets = optional(object({
+      ssm_path_prefix = optional(string, "/")
+      authorized_iam_role_arn = optional(string, null) # IAM Role ARN to be added to service account annotations for IRSA
       values = optional(list(string), [])
     }))
 

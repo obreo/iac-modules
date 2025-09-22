@@ -315,10 +315,16 @@ resource "helm_release" "external_secrets" {
   wait             = var.plugins.dont_wait_for_helm_install ? false : true
   values           = var.plugins.external_secrets.values == null ? [] : var.plugins.external_secrets.values
 
-  set = [{
-    name  = "installCRDs"
-    value = "true"
-  }]
+  set = [
+    {
+      name  = "installCRDs"
+      value = "true"
+    },
+    {
+      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = "${var.plugins.external_secrets.authorized_iam_role_arn == null ? aws_iam_role.external_secrets.arn : var.plugins.external_secrets.authorized_iam_role_arn}"
+    }
+  ]
   depends_on = [time_sleep.wait_for_node, helm_release.metrics_server , helm_release.rancher]
 }
 
