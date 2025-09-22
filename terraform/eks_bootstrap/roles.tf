@@ -1,5 +1,4 @@
 # Calling aws region and account ID for IAM policies
-data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 ## aws_ebs_csi_driver
