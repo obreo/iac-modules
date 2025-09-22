@@ -144,7 +144,7 @@ resource "aws_iam_policy" "external_secrets" {
             "ssm:GetParameter*"
           ],
           "Resource" : [
-            "${var.plugins.external_secrets.ssm_path_prefix != "/" ? "arn:aws:ssm:${var.metadata.region}:${data.aws_caller_identity.current.account_id}:parameter${var.plugins.external_secrets.ssm_path_prefix}" : "*"}"
+            "${var.plugins.external_secrets.ssm_path_prefix != "/" ? "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${var.plugins.external_secrets.ssm_path_prefix}" : "*"}"
           ]
         }
       ]

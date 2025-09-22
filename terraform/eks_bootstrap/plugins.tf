@@ -322,7 +322,7 @@ resource "helm_release" "external_secrets" {
     },
     {
       name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-      value = "${var.plugins.external_secrets.authorized_iam_role_arn == null ? aws_iam_role.external_secrets.arn : var.plugins.external_secrets.authorized_iam_role_arn}"
+      value = "${var.plugins.external_secrets.authorized_iam_role_arn == null ? aws_iam_role.external_secrets[0].arn : var.plugins.external_secrets.authorized_iam_role_arn}"
     }
   ]
   depends_on = [time_sleep.wait_for_node, helm_release.metrics_server , helm_release.rancher]

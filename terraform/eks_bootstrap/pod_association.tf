@@ -83,7 +83,7 @@ resource "aws_eks_pod_identity_association" "s3" {
 ## Application Load Balancer Controller service account auth
 resource "aws_eks_pod_identity_association" "external-secrets" {
   count           = var.plugins.external_secrets == null ? 0 : 1
-  cluster_name    = var.metadata.name
+  cluster_name    = data.aws_eks_cluster.eks.name
   namespace       = "external-secrets"
   service_account = "external_secrets"
   role_arn        = aws_iam_role.external_secrets[count.index].arn
