@@ -59,10 +59,6 @@ resource "helm_release" "cluster_autoscaler" {
   depends_on = [
     time_sleep.wait_for_node,
     helm_release.metrics_server]
-
-  lifecycle {
-    ignore_changes = [ scaling_config[0].desired_size ]
-  }
 }
 
 
