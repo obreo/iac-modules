@@ -77,14 +77,14 @@ resource "aws_egress_only_internet_gateway" "egw" {
 locals {
   public_azs = var.vpc_settings.availability_zones != null ? var.vpc_settings.availability_zones : distinct(compact([for subnet in aws_subnet.public : subnet.availability_zone]))
 
-  nat_map = length(local.public_azs) == 0 ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { local.public_azs[0] = local.public_azs[0] }
+  nat_map = length(local.public_azs) == 0 ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { for az in local.public_azs[0]: az => local.public_azs[0] }
 }
 
 resource "aws_nat_gateway" "public" {
   for_each = local.nat_map
   allocation_id = aws_eip.one[each.key].id
 
-  subnet_id     = var.vpc_settings.create_private_subnets_nat.nat_per_az ? [for subnet in aws_subnet.public : subnet.id if subnet.availability_zone == local.public_azs[count.index]][0] : aws_subnet.public[0].id
+  subnet_id     = var.vpc_settings.create_private_subnets_nat.nat_per_az ? [for subnet in aws_subnet.public : subnet.id if subnet.availability_zone == each.vlaue][0] : aws_subnet.public[0].id
   
   
 
