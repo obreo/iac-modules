@@ -7,7 +7,11 @@ variable "vpc_settings" {
     vpc_cidr_block             = string
     public_subnet_cidr_blocks  = optional(list(string),[])
     private_subnet_cidr_blocks = optional(list(string),[])
-    create_private_subnets_nat = optional(bool, true)
+    create_private_subnets_nat = optional(object(
+      {
+        nat_per_az = optional(bool, false)
+      }
+    ))# optional(bool, true)
     availability_zones         = optional(list(string))
     enable_dns_hostnames        = optional(bool, true)
 
