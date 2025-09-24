@@ -84,7 +84,7 @@ resource "aws_nat_gateway" "public" {
   for_each = local.nat_map
   allocation_id = aws_eip.one[each.key].id
 
-  subnet_id     = var.vpc_settings.create_private_subnets_nat.nat_per_az ? [for subnet in aws_subnet.public : subnet.id if subnet.availability_zone == each.vlaue][0] : aws_subnet.public[0].id
+  subnet_id     = var.vpc_settings.create_private_subnets_nat.nat_per_az ? [for subnet in aws_subnet.public : subnet.id if subnet.availability_zone == each.value][0] : aws_subnet.public[0].id
   
   
 
