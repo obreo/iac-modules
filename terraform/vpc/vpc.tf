@@ -77,8 +77,7 @@ resource "aws_egress_only_internet_gateway" "egw" {
 locals {
   public_azs = var.vpc_settings.availability_zones != null ? var.vpc_settings.availability_zones : distinct(compact([for subnet in aws_subnet.public : subnet.availability_zone]))
 
-  nat_map = length([for subnet in aws_subnet.private: subnet.id]) == 0 || var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { for az in slice(local.public_azs, 0, 1) : az => az }
-
+  nat_map = length([for subnet in aws_subnet.private: subnet.id]) == 0 || var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { "main" = local.public_azs[0] }
 }
 
 resource "aws_nat_gateway" "public" {
@@ -174,7 +173,7 @@ resource "aws_route_table" "private" {
     for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat != null ? [1] : []
     content {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.public[each.key].id
+    gateway_id = try(aws_nat_gateway.public[each.key].id, aws_nat_gateway.public["main"].id)
     }
   }
 
