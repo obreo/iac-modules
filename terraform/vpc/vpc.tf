@@ -192,7 +192,7 @@ resource "aws_route_table_association" "private" {
     for idx, subnet in aws_subnet.private : idx => subnet.availability_zone
   }
   subnet_id      = aws_subnet.private[tonumber(each.key)].id
-  route_table_id = aws_route_table.private[each.value].id
+  route_table_id = try(aws_route_table.private[each.value].id, aws_route_table.private["main"].id)
 }
 
 # ## Route table private - per AZ NAT gateway
