@@ -108,7 +108,7 @@ resource "aws_eip" "one" {
   domain = "vpc"
 
   tags = {
-    Name = "${var.name}-EIP-${local.public_azs[count.index]}"
+    Name = "${var.name}-EIP-${local.public_azs[each.key]}"
   }
 }
 
