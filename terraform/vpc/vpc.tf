@@ -77,7 +77,7 @@ resource "aws_egress_only_internet_gateway" "egw" {
 locals {
   public_azs = var.vpc_settings.availability_zones != null ? var.vpc_settings.availability_zones : distinct(compact([for subnet in aws_subnet.public : subnet.availability_zone]))
 
-  nat_map = length([for subnet in aws_subnet.aws_subnet.private: subnet.id]) == 0 || var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : local.public_azs[0]
+  nat_map = length([for subnet in aws_subnet.private: subnet.id]) == 0 || var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : local.public_azs[0]
 }
 
 resource "aws_nat_gateway" "public" {
