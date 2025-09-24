@@ -167,7 +167,7 @@ resource "aws_route_table" "private" {
   }
 
   dynamic "route" {
-    for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat ? [1] : []
+    for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat != null ? [1] : []
     content {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_nat_gateway.public[count.index].id
@@ -210,7 +210,7 @@ resource "aws_route_table" "private_multi_az" {
   }
 
   dynamic "route" {
-    for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat ? [1] : []
+    for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat != null ? [1] : []
     content {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_nat_gateway.public[each.key].id
