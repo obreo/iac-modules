@@ -189,9 +189,9 @@ resource "aws_route_table" "private" {
 resource "aws_route_table_association" "private" {
   #count =  try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? 0 : max(try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0 ), try(length(var.vpc_settings.private_subnet_cidr_blocks), 0))
   for_each = {
-    for subnet in aws_subnet.private : subnet.id => subnet.availability_zone
+    for idx, subnet in aws_subnet.private : idx => subnet.availability_zone
   }
-  subnet_id      = aws_subnet.private[each.key].id
+  subnet_id      = aws_subnet.private[tonumber(each.key)].id
   route_table_id = aws_route_table.private[each.value].id
 }
 
