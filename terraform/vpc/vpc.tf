@@ -158,7 +158,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_route_table" "private" {
   #count = ((try(var.vpc_settings.private_subnet_cidr_blocks, null) != null && try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) == false) || 
   #(try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0) != 0 && try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) == false)) ? 1 : 0
-  for_each = local.nat_map
+  for_each = toset(local.public_azs)
   vpc_id = aws_vpc.vpc.id
 
   dynamic "route" {
