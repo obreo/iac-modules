@@ -76,18 +76,20 @@ resource "aws_egress_only_internet_gateway" "egw" {
 # NAT GATEWAY
 locals {
   public_azs = var.vpc_settings.availability_zones != null ? var.vpc_settings.availability_zones : distinct(compact([for subnet in aws_subnet.public : subnet.availability_zone]))
+
+  nat_map = length(local.public_azs) == 0 ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { local.public_azs[0] = local.public_azs[0] }
 }
 
 resource "aws_nat_gateway" "public" {
-  count         = var.vpc_settings.private_subnet_cidr_blocks == null ? 0 : var.vpc_settings.create_private_subnets_nat == null ? 0 : var.vpc_settings.create_private_subnets_nat.nat_per_az ? length(local.public_azs) : 1
-  allocation_id = aws_eip.one[count.index].id
+  for_each = local.nat_map
+  allocation_id = aws_eip.one[each.key].id
 
   subnet_id     = var.vpc_settings.create_private_subnets_nat.nat_per_az ? [for subnet in aws_subnet.public : subnet.id if subnet.availability_zone == local.public_azs[count.index]][0] : aws_subnet.public[0].id
   
   
 
   tags = {
-    Name = "${var.name}-NAT-GW-${local.public_azs[count.index]}"
+    Name = "${var.name}-NAT-GW-${local.public_azs[each.key]}"
   }
 
   # To ensure proper ordering, it is recommended to add an explicit dependency
@@ -101,7 +103,8 @@ resource "aws_nat_gateway" "public" {
 
 # ELASTIC IP
 resource "aws_eip" "one" {
-  count         = var.vpc_settings.private_subnet_cidr_blocks == null ? 0 : var.vpc_settings.create_private_subnets_nat == null ? 0 : var.vpc_settings.create_private_subnets_nat.nat_per_az ? length(local.public_azs) : 1
+  #count         = var.vpc_settings.private_subnet_cidr_blocks == null ? 0 : var.vpc_settings.create_private_subnets_nat == null ? 0 : var.vpc_settings.create_private_subnets_nat.nat_per_az ? length(local.public_azs) : 1
+  for_each = local.nat_map
   domain = "vpc"
 
   tags = {
@@ -153,59 +156,16 @@ resource "aws_route_table_association" "public" {
 
 ## Route table private - single AZ NAT gateway
 resource "aws_route_table" "private" {
-  count = ((try(var.vpc_settings.private_subnet_cidr_blocks, null) != null && try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) == false) || 
-  (try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0) != 0 && try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) == false)) ? 1 : 0
-
+  #count = ((try(var.vpc_settings.private_subnet_cidr_blocks, null) != null && try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) == false) || 
+  #(try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0) != 0 && try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) == false)) ? 1 : 0
+  for_each = local.nat_map
   vpc_id = aws_vpc.vpc.id
 
   dynamic "route" {
   for_each = var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 != null ? [1] : []
     content {
       ipv6_cidr_block         = "::/0"
-      gateway_id = aws_egress_only_internet_gateway.egw[count.index].id
-    }
-  }
-
-  dynamic "route" {
-    for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat != null ? [1] : []
-    content {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.public[count.index].id
-    }
-  }
-
-  tags = {
-    Name = "${var.name}-private"
-  }
-
-  #lifecycle {
-    #ignore_changes = [route]
-  #}
-}
-
-resource "aws_route_table_association" "private" {
-  count =  try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? 0 : max(try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0 ), try(length(var.vpc_settings.private_subnet_cidr_blocks), 0))
-
-  subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private[0].id
-}
-
-## Route table private - per AZ NAT gateway
-
-# local list of AZs where we need NAT (unique)
-locals {
-  private_azs = distinct([for subnet in aws_subnet.private : subnet.availability_zone])
-}
-resource "aws_route_table" "private_multi_az" {
-  for_each = toset(local.private_azs)
-
-  vpc_id = aws_vpc.vpc.id
-
-  dynamic "route" {
-  for_each = var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 != null ? [1] : []
-    content {
-      ipv6_cidr_block         = "::/0"
-      gateway_id = aws_egress_only_internet_gateway.egw[each.key].id
+      gateway_id = aws_egress_only_internet_gateway.egw[0].id
     }
   }
 
@@ -218,7 +178,7 @@ resource "aws_route_table" "private_multi_az" {
   }
 
   tags = {
-    Name = "${var.name}-route-table-private-${each.key}"
+    Name = "${var.name}-private-${each.key}"
   }
 
   #lifecycle {
@@ -226,13 +186,58 @@ resource "aws_route_table" "private_multi_az" {
   #}
 }
 
-resource "aws_route_table_association" "private_multi_az" {
+resource "aws_route_table_association" "private" {
+  #count =  try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? 0 : max(try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0 ), try(length(var.vpc_settings.private_subnet_cidr_blocks), 0))
   for_each = {
     for subnet in aws_subnet.private : subnet.id => subnet.availability_zone
   }
-  subnet_id      = each.key
-  route_table_id = aws_route_table.private_multi_az[each.value].id
+  subnet_id      = aws_subnet.private[each.key].id
+  route_table_id = aws_route_table.private[each.value].id
 }
+
+# ## Route table private - per AZ NAT gateway
+
+# # local list of AZs where we need NAT (unique)
+# locals {
+#   private_azs = distinct([for subnet in aws_subnet.private : subnet.availability_zone])
+# }
+# resource "aws_route_table" "private_multi_az" {
+#   for_each = toset(local.private_azs)
+
+#   vpc_id = aws_vpc.vpc.id
+
+#   dynamic "route" {
+#   for_each = var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 != null ? [1] : []
+#     content {
+#       ipv6_cidr_block         = "::/0"
+#       gateway_id = aws_egress_only_internet_gateway.egw[each.key].id
+#     }
+#   }
+
+#   dynamic "route" {
+#     for_each = var.vpc_settings.private_subnet_cidr_blocks != null && var.vpc_settings.create_private_subnets_nat != null ? [1] : []
+#     content {
+#     cidr_block = "0.0.0.0/0"
+#     gateway_id = aws_nat_gateway.public[each.key].id
+#     }
+#   }
+
+#   tags = {
+#     Name = "${var.name}-route-table-private-${each.key}"
+#   }
+
+#   #lifecycle {
+#     #ignore_changes = [route]
+#   #}
+# }
+
+# resource "aws_route_table_association" "private_multi_az" {
+#   for_each = {
+#     for subnet in aws_subnet.private : subnet.id => subnet.availability_zone
+#   }
+#   subnet_id      = each.key
+#   route_table_id = aws_route_table.private_multi_az[each.value].id
+# }
 
 
 
