@@ -89,7 +89,7 @@ resource "aws_nat_gateway" "public" {
   
 
   tags = {
-    Name = "${var.name}-NAT-GW-${local.public_azs[each.key]}"
+    Name = "${var.name}-NAT-GW-${each.key}"
   }
 
   # To ensure proper ordering, it is recommended to add an explicit dependency
@@ -108,7 +108,7 @@ resource "aws_eip" "one" {
   domain = "vpc"
 
   tags = {
-    Name = "${var.name}-EIP-${local.public_azs[each.key]}"
+    Name = "${var.name}-EIP-${each.key}"
   }
 }
 
