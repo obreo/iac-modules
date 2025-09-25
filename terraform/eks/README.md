@@ -1,175 +1,120 @@
 # HOW TO USE
 
-```
+## Deployment Instructions
+
+1. **Add the module to your Terraform configuration:**
+
+```hcl
 module "eks" {
   source = "./modules/eks"
+
   metadata = {
-    name        = string
-    environment = string
-    eks_version = string
-    region  = string
+    name        = "your-cluster-name"
+    environment = "dev"
+    eks_version = "1.29"
+    region      = "us-west-2" # Optional
   }
 
   cluster_settings = {
-    cluster_subnet_ids = list(string)  # Required, min are two, in different AZs
-    allowed_cidrs_to_access_cluster_publicly = list(string) # Optional, set default to "0.0.0.0/0"
-    set_custom_pod_cidr_block = string  # Optional
-    support_type = string # Optional, defaults to "STANDARD"
-    ip_family = string # Optional, defaults to "ipv4"
-    security_group_ids = list(string) # Optional, EKS will generate one if not specified.
-    enable_endpoint_public_access = bool # Optional, defaults to true
-    enable_endpoint_private_access = bool  # Optional, defaults to false
-    create_eks_admin_access_iam_group = bool  # Optional, defaults to false
-    create_eks_custom_access_iam_group = bool  # Optional, defaults to false
-
+    cluster_subnet_ids = ["subnet-xxxx", "subnet-yyyy"] # Required, at least two in different AZs
+    allowed_cidrs_to_access_cluster_publicly = ["0.0.0.0/0"] # Optional
+    set_custom_pod_cidr_block = "10.0.0.0/16" # Optional
+    support_type = "STANDARD" # Optional
+    ip_family = "ipv4" # Optional
+    security_group_ids = ["sg-xxxx"] # Optional
+    enable_endpoint_public_access = true # Optional
+    enable_endpoint_private_access = false # Optional
+    create_eks_admin_access_iam_group = false # Optional
+    create_eks_custom_access_iam_group = [] # Optional
     enable_logging = {
-      api               = bool # Optional, default to false
-      audit             = bool # Optional, default to false
-      authenticator     = bool # Optional, default to false
-      controllerManager = bool # Optional, default to false
-      scheduler         = bool # Optional, default to false
+      api               = false
+      audit             = false
+      authenticator     = false
+      controllerManager = false
+      scheduler         = false
+      retention_in_days = 3
     }
-
     addons = {
-      vpc_cni                         = bool # Optional, default to false
-      eks_pod_identity_agent          = bool # Optional, default to true
-      snapshot_controller             = bool # Optional, default to false
-      aws_guardduty_agent             = bool # Optional, default to false
-      amazon_cloudwatch_observability = bool # Optional, default to false
-      aws_ebs_csi_driver = {
-        fstype = string # Defaults to "ext4"
-        ebs_type = string # Defaults to "gp3"
-        iopsPerGB =  number # Optional
-        encrypted = bool # Defaults to true
-      }
-      aws_efs_csi_driver = {
-        enable          = bool # Defaults to false
-        encrypted       = bool # Defaults to true
-        subnet_ids      = list(string) # Required if no resource specified.
-        efs_resource_id = string # Optional, resource will be created if not specified.
-      }
-      aws_mountpoint_s3_csi_driver = {
-        enable        = bool # Defaults to false
-        s3_bucket_arn = string # Optional, resource will be created if not specified.
-      }
+      vpc_cni                         = true
+      eks_pod_identity_agent          = true
+      snapshot_controller             = false
+      aws_guardduty_agent             = false
+      amazon_cloudwatch_observability = false
     }
   }
 
   node_settings = {
-    cluster_name          = string # optional
-    node_group_name       = string # optional
-    workernode_subnet_ids = list(string)
-    taints                = list(map(string)) # Optional, e.g. [{key = "", value = "", effect = ""}, {}]
-    labels                = map(string) # Optional, e.g. {"key1" = "value1","key2" = "value2"}
+    cluster_name    = "your-cluster-name" # Optional
+    node_group_name = "your-node-group"   # Optional
+    workernode_subnet_ids = ["subnet-xxxx", "subnet-yyyy"]
+    taints = [
+      { key = "dedicated", value = "gpu", effect = "NoSchedule" }
+    ]
+    labels = { "role" = "worker" }
     capacity_config = {
-      capacity_type  = string # Optional, default to "ON_DEMAND"
-      instance_types = list(string)
-      disk_size      = number # Optional, default to 20GB
+      capacity_type  = "ON_DEMAND"
+      instance_types = ["t3.medium"]
+      disk_size      = 20
     }
     scaling_config = {
-      desired         = number # Optional, default to 1
-      max_size        = number # Optional, default to 1
-      min_size        = number # Optional, default to 1
-      max_unavailable = number # Optional, default to 1
+      desired         = 2
+      max_size        = 3
+      min_size        = 1
+      max_unavailable = 1
     }
-    remote_access  = { # Optional
-      enable       = bool, false # Optional, defaults to false
-      ssh_key_name = string
-      allowed_security_groups = list(string) # Optional, defaults to "0.0.0.0/0" acccessibility
+    remote_access = {
+      enable                  = false
+      ssh_key_name            = null
+      allowed_security_groups = []
     }
   }
 
   fargate_profile = {
-    cluster_name  = string # optional
-    subnet_ids = list(string)
-    fargate_profile_name = string # optional
-    namespace = string # optional, if not stated, custom namespace "fargate-space" is specified
-  }
-
-  plugins = { # Optional, used as `argument = {}`
-    dont_wait_for_helm_install           = bool # Optional, defaults to true
-    create_ecr_registry = bool # Optional, defaults to false
-    cluster_autoscaler = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    } 
-    metrics_server = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    aws_alb_controller = {
-      vpc_id = string
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    nginx_controller = {
-      scheme_type       = optional(string, "internet-facing") # OR "internal"
-      enable_cross_zone = bool # Optional, default to false
-      values            = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    argo_cd = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    external_secrets = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    secrets_store_csi_driver = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    loki = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    prometheus = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    cert_manager = {
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    kubernetes_dashboard = {
-      hosts          = list(string)
-      use_internally = bool # Optiona, defaults to false
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    rancher = {
-      host                 = string
-      use_internal_ingress = bool # Optiona, defaults to false
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
-    calico_cni = {
-      enable = bool # Defaults to false
-      cidr   = string  # Should be within the VPC CIDR, and not overlap with subnet CIDRs.
-      values = list(string) # Optional, e.g [<<EOF...EOF]
-    }
+    cluster_name         = "your-cluster-name" # Optional
+    subnet_ids           = ["subnet-xxxx", "subnet-yyyy"]
+    fargate_profile_name = "profile-name" # Optional
+    namespace            = "fargate-space" # Optional
   }
 }
 ```
+
+2. **Initialize and apply Terraform:**
+
+```sh
+terraform init
+terraform plan
+terraform apply
+```
+
+## Variable Reference
+
+See [`variables.tf`](./variables.tf) for all available variables, types, and default values. Key variables include:
+
+- `metadata`: Cluster metadata (name, environment, eks_version, region)
+- `cluster_settings`: Cluster networking, logging, and add-ons
+- `node_settings`: Node group configuration
+- `fargate_profile`: Fargate profile configuration
+
+Each category can be created independently. For example, to create only an EKS cluster without node groups or Fargate profiles, provide only the `metadata` and `cluster_settings` variables.
+
+Optional and advanced settings are documented in `variables.tf` with comments and default values.
+
+---
+
 # OUTPUTS
-## EKS
-```
-# CLUSTER ENDPOINT
-endpoint
 
-# KUBECONFIG CERTIFICATE AUTHORITY
-kubeconfig-certificate-authority-data
+The following outputs are available from this module:
 
-# CLUSTER ID
-cluster_id
+| Output Name                        | Description                                                      |
+|------------------------------------|------------------------------------------------------------------|
+| `endpoint`                         | EKS cluster endpoint URL                                         |
+| `kubeconfig_certificate_authority_data` | Certificate authority data for kubeconfig                        |
+| `cluster_id`                       | EKS cluster ID(s)                                                |
+| `cluster_name`                     | EKS cluster name                                                 |
+| `aws_eks_cluster_certificate_data` | Certificate authority data from data source                       |
+| `aws_eks_cluster_data`             | Cluster endpoint from data source                                |
+| `aws_eks_cluster_name`             | Cluster name from data source                                    |
+| `aws_eks_cluster_auth`             | Authentication token for the cluster                             |
+| `ecr_registry`                     | (If enabled) ECR registry URL                                    |
 
-# CLUSTER NAME
-cluster_name
-
-#########################
-# BASED ON DATA RESOURCES
-#########################
-## CLUSTER CERTIFICATE
-aws_eks_cluster_certificate_data
-
-## CLUSTER ENDPOINT
-aws_eks_cluster_data
-
-## CLUSTER NAME
-aws_eks_cluster_name
-
-## CLUSTER TOKEN
-aws_eks_cluster_auth
-
-## ECR REGISTRY URL
-ecr_registry
-```
+Refer to `outputs.tf` for the most up-to-date and detailed output definitions.
