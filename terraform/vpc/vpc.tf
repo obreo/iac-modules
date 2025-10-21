@@ -142,9 +142,9 @@ resource "aws_route_table" "public" {
     }
 }
 resource "aws_route_table_association" "public" {
-  count          = ( 
-    var.vpc_settings.enable_aws_ipv6_cidr_block == null ? 0 : var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native
-    || var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64 != 0
+  count          = ( var.vpc_settings.enable_aws_ipv6_cidr_block != null && 
+  (var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native
+    || var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64 != 0)
   ) ? max(
     var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64,
     try(length(var.vpc_settings.public_subnet_cidr_blocks), 0),
