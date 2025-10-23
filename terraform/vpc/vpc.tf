@@ -18,7 +18,7 @@ resource "aws_subnet" "public" {
   availability_zone                               = try(var.vpc_settings.availability_zones[count.index % length(var.vpc_settings.availability_zones)], null)
   enable_resource_name_dns_a_record_on_launch     = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || length(var.vpc_settings.private_subnet_cidr_blocks) == 0 ? false : true
   map_public_ip_on_launch                         = true
-  enable_resource_name_dns_aaaa_record_on_launch  = try(var.vpc_settings.enable_aws_ipv6_cidr_block, {}) != {} ? true : false
+  enable_resource_name_dns_aaaa_record_on_launch  = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || try(var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64, 0) != 0 ? true : false
   ipv6_native                                     = length(var.vpc_settings.public_subnet_cidr_blocks) == 0 ? true : try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) ? true : false
   tags = merge(
     {
@@ -39,7 +39,7 @@ resource "aws_subnet" "private" {
   assign_ipv6_address_on_creation                 = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0) != 0 ? true : false
   availability_zone                               = try(var.vpc_settings.availability_zones[count.index % length(var.vpc_settings.availability_zones)], null)
   enable_resource_name_dns_a_record_on_launch     = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || length(var.vpc_settings.private_subnet_cidr_blocks) == 0 ? false : true
-  enable_resource_name_dns_aaaa_record_on_launch  = try(var.vpc_settings.enable_aws_ipv6_cidr_block, {}) != {} ? true : false
+  enable_resource_name_dns_aaaa_record_on_launch  = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0) != 0 ? true : false
   map_public_ip_on_launch                         = false
   ipv6_native                                     = length(var.vpc_settings.private_subnet_cidr_blocks) == 0 ? true : try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) ? true : false
   tags = merge(
