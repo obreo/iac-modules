@@ -14,12 +14,12 @@ resource "aws_subnet" "public" {
   count                                           = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) ? try(var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64, 0) : length(var.vpc_settings.public_subnet_cidr_blocks)
   vpc_id                                          = aws_vpc.vpc.id
   cidr_block                                      = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || length(var.vpc_settings.public_subnet_cidr_blocks) == 0 ? null : var.vpc_settings.public_subnet_cidr_blocks[count.index]
-  ipv6_cidr_block                                 = try(var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64 != 0 ? cidrsubnet(aws_vpc.vpc.ipv6_cidr_block, 8, count.index) : null)
+  ipv6_cidr_block                                 = try(var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64, 0) != 0 ? cidrsubnet(aws_vpc.vpc.ipv6_cidr_block, 8, count.index) : null
   availability_zone                               = try(var.vpc_settings.availability_zones[count.index % length(var.vpc_settings.availability_zones)], null)
-  enable_resource_name_dns_a_record_on_launch     = var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native || length(var.vpc_settings.private_subnet_cidr_blocks) == 0 ? false : true
+  enable_resource_name_dns_a_record_on_launch     = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || length(var.vpc_settings.private_subnet_cidr_blocks) == 0 ? false : true
   map_public_ip_on_launch                         = true
-  enable_resource_name_dns_aaaa_record_on_launch  = var.vpc_settings.enable_aws_ipv6_cidr_block != {} ? true : false
-  ipv6_native                                     = length(var.vpc_settings.public_subnet_cidr_blocks) == 0 ? true : var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native ? true : false
+  enable_resource_name_dns_aaaa_record_on_launch  = try(var.vpc_settings.enable_aws_ipv6_cidr_block, {}) != {} ? true : false
+  ipv6_native                                     = length(var.vpc_settings.public_subnet_cidr_blocks) == 0 ? true : try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) ? true : false
   tags = merge(
     {
       Name = "${var.name}-public"
