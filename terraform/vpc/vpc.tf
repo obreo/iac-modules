@@ -32,7 +32,7 @@ resource "aws_subnet" "public" {
   }
 }
 resource "aws_subnet" "private" {
-  count                                           = var.vpc_settings.enable_aws_ipv6_cidr_block == null ? 0 : var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native || var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 != 0 ? var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 : length(var.vpc_settings.private_subnet_cidr_blocks)
+  count                                           = try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) || try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64, 0) != 0 ? var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 : length(var.vpc_settings.private_subnet_cidr_blocks)
   vpc_id                                          = aws_vpc.vpc.id
   cidr_block                                      = var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native || length(var.vpc_settings.private_subnet_cidr_blocks) == 0 ? null : var.vpc_settings.private_subnet_cidr_blocks[count.index]
   ipv6_cidr_block                                 = try(var.vpc_settings.enable_aws_ipv6_cidr_block.private_cidr_count_prefix64 != 0 ? cidrsubnet(aws_vpc.vpc.ipv6_cidr_block, 8, var.vpc_settings.enable_aws_ipv6_cidr_block.public_cidr_count_prefix64 + count.index) : null)
@@ -77,7 +77,7 @@ resource "aws_egress_only_internet_gateway" "egw" {
 locals {
   public_azs = var.vpc_settings.availability_zones != null ? var.vpc_settings.availability_zones : distinct(compact([for subnet in aws_subnet.public : subnet.availability_zone]))
 
-  nat_map = length([for subnet in aws_subnet.private: subnet.id]) == 0 || var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { "main" = local.public_azs[0] }
+  nat_map = length([for subnet in aws_subnet.private: subnet.id]) == 0 || try(var.vpc_settings.enable_aws_ipv6_cidr_block.ipv6_native, false) ? {} : try(var.vpc_settings.create_private_subnets_nat.nat_per_az, false) ? { for az in local.public_azs : az => az } : { "main" = local.public_azs[0] }
 }
 
 resource "aws_nat_gateway" "public" {
